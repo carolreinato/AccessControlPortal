@@ -1,0 +1,68 @@
+﻿@model AccessControlPortal.Models.CriarPessoaTipoAcesso
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Acesso ao condomínio</h1>
+
+<h4>Conceder acesso</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div class="form-group">
+                <input hidden id="idPessoa" value="@Model.IdPessoa"/>
+            </div>
+            <div class="form-group">
+                <select id="tipoAcesso">
+                    <option>Selecione...</option>
+                    <option value="1">Prestador de Serviços</option>
+                    <option value="3">Visitante</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <select id="codigoAcesso">
+                    <option>Selecione...</option>
+                    @foreach (var codigo in Model.IdCodigoAcesso)
+                    {
+                        <option value="@codigo">@codigo</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <button onclick="Submit()" style="margin-top: 35px">Conceder</button>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        function Submit() {
+        debugger;
+            var idPessoa = $("#idPessoa").val();
+            var idTipoAcesso = $("#tipoAcesso").children("option:selected").val();
+            var idCodigoAcesso = $("#codigoAcesso").children("option:selected").val();
+
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("Create", "PessoaTipoAcesso")",
+                data: {
+                    idPessoa: idPessoa,
+                    idTipoAcesso: idTipoAcesso,
+                    idCodigoAcesso: idCodigoAcesso
+                },
+                dataType: 'json',
+                contentType: "application/x-www-form-urlencoded",
+                success: function (url) {
+                    window.location.href = url;
+                    alert("Acesso concedido!")
+                },
+                error: function (url) {
+                    window.location.href = url;
+                    alert("Algo deu errado =(")
+                }
+               })
+    }
+    </script>
+}

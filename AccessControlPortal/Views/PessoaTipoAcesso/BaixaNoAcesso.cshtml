@@ -1,0 +1,97 @@
+﻿@model AccessControlPortal.Models.Pessoa
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+    <h1>Saída do condomínio</h1>
+
+@*<p>
+        <a asp-action="Create">Create New</a>
+    </p>*@
+
+<p>Informe o Cpf da pessoa que quer sair do condomínio</p>
+<hr />
+
+<div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label class="control-label">Digite o CPF da pessoa sem pontos e traços</label>
+                <input class="form-control" id="cpf"/>
+                <span class="text-danger"></span>
+            </div>
+        </div>
+        <div>
+            <button onclick="CheckCpf()" style="margin-top: 35px";>Procurar</button>
+        </div>
+    </div>
+
+@section Scripts{
+       <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.0/jquery.mask.js"></script>
+       <script>
+           $(document).ready(function () {
+               var $seuCampoCpf = $("#cpf");
+               $seuCampoCpf.mask('000.000.000-00', { reverse: true });
+           });
+
+           function CheckCpf() {
+               var cpf = $("#cpf").cleanVal();
+               $.ajax({
+                   type: "POST",
+                   url: "@Url.Action("GetIdPessoaTipoAcesso", "PessoaTipoAcesso")",
+                   data: { cpf: cpf },
+                   dataType: 'json',
+                   contentType: "application/x-www-form-urlencoded",
+                   success: function (url) {
+                       window.location.href = url;
+                       alert("A pessoa deixou o condomínio!")
+                   },
+                   error: function (url) {
+                       window.location.href = url;
+                       alert("Algo deu errado =(")
+                   }
+               })
+           }
+       </script>
+    }
+
+@*<table class="table">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.Id)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Nome)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Cpf)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Telefone)
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+    @foreach (var item in Model) {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Id)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Nome)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Cpf)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Telefone)
+                </td>
+                <td>
+                    @Html.ActionLink("Details", "Details", new {  cpf = item.Cpf }) |
+                </td>
+            </tr>
+    }
+        </tbody>
+    </table>*@

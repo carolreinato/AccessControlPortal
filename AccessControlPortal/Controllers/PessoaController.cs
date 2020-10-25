@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using AccessControlPortal.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Newtonsoft.Json;
 
 namespace AccessControlPortal.Controllers
@@ -16,10 +19,14 @@ namespace AccessControlPortal.Controllers
         private string Baseurl = "https://localhost:44372/";
 
         // GET: Pessoa
-        public async Task<ActionResult> Index()
+        public ActionResult Index()
         {
-            List<Pessoa> EmpInfo = new List<Pessoa>();
+            return View();
+        }
 
+        public async Task<Pessoa> GetPessoaByCpf(string cpf)
+        {
+            Pessoa pessoa = new Pessoa();
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri(Baseurl);
@@ -28,20 +35,28 @@ namespace AccessControlPortal.Controllers
 
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                HttpResponseMessage Res = await client.GetAsync("api/Pessoa/GetPessoas");
+                HttpResponseMessage Res = await client.GetAsync("api/Pessoa/GetPessoa?cpf=" + cpf);
 
                 if (Res.IsSuccessStatusCode)
                 {
                     var EmpResponse = Res.Content.ReadAsStringAsync().Result;
 
-                    EmpInfo = JsonConvert.DeserializeObject<List<Pessoa>>(EmpResponse);
+                    pessoa = JsonConvert.DeserializeObject<Pessoa>(EmpResponse);
+
+                    return pessoa;
                 }
-                return View(EmpInfo);
+                else
+                {
+                    //Lógica de fallha
+                    return pessoa;
+                }
+
             }
         }
 
         // GET: Pessoa/Details/5
-        public async Task<ActionResult> Details(string cpf)
+        [HttpPost]
+        public async Task<JsonResult> Details(string cpf)
         {
             Pessoa EmpInfo = new Pessoa();
 
@@ -60,8 +75,14 @@ namespace AccessControlPortal.Controllers
                     var EmpResponse = Res.Content.ReadAsStringAsync().Result;
 
                     EmpInfo = JsonConvert.DeserializeObject<Pessoa>(EmpResponse);
+                    return Json(Url.Action("Create", "PessoaTipoAcesso", new { pessoa = EmpInfo.Id}));
                 }
-                return View(EmpInfo);
+                else
+                {
+                    //return View("Create");
+                    return Json(Url.Action("Create", "Pessoa"));
+                }
+                
             }
         }
 
@@ -73,64 +94,36 @@ namespace AccessControlPortal.Controllers
 
         // POST: Pessoa/Create
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<ActionResult> Create(PessoaCreate pessoa)
         {
-            try
+            using (var client = new HttpClient())
             {
-                // TODO: Add insert logic here
+                client.BaseAddress = new Uri(Baseurl);
 
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
+                client.DefaultRequestHeaders.Clear();
 
-        // GET: Pessoa/Edit/5
-        public ActionResult Edit(int id)
-        {
-            return View();
-        }
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        // POST: Pessoa/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
-        {
-            try
-            {
-                // TODO: Add update logic here
+                HttpResponseMessage Res = await client.PostAsJsonAsync<PessoaCreate>($"api/Pessoa/AddPessoa?nome={pessoa.Nome}&cpf={pessoa.Cpf}&telefone={pessoa.Telefone}", pessoa);
 
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
+                if (Res.IsSuccessStatusCode)
+                {
+                    var pessoaAdd = GetPessoaByCpf(pessoa.Cpf);
 
-        // GET: Pessoa/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
+                    if(pessoaAdd != null)
+                    {
+                        return RedirectToAction("Create", "PessoaTipoAcesso", pessoaAdd.Id);
+                    }
+                    else
+                    {
+                        return RedirectToAction("Error");
+                    }
+                }
+                else
+                {
+                    return RedirectToAction("Index");
+                }
 
-        // POST: Pessoa/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
-        {
-            try
-            {
-                // TODO: Add delete logic here
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
             }
         }
     }
