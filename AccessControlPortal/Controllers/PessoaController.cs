@@ -9,6 +9,7 @@ using AccessControlPortal.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Newtonsoft.Json;
 
 namespace AccessControlPortal.Controllers
@@ -21,6 +22,36 @@ namespace AccessControlPortal.Controllers
         public ActionResult Index()
         {
             return View();
+        }
+
+        public async Task<Pessoa> GetPessoaByCpf(string cpf)
+        {
+            Pessoa pessoa = new Pessoa();
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(Baseurl);
+
+                client.DefaultRequestHeaders.Clear();
+
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                HttpResponseMessage Res = await client.GetAsync("api/Pessoa/GetPessoa?cpf=" + cpf);
+
+                if (Res.IsSuccessStatusCode)
+                {
+                    var EmpResponse = Res.Content.ReadAsStringAsync().Result;
+
+                    pessoa = JsonConvert.DeserializeObject<Pessoa>(EmpResponse);
+
+                    return pessoa;
+                }
+                else
+                {
+                    //Lógica de fallha
+                    return pessoa;
+                }
+
+            }
         }
 
         // GET: Pessoa/Details/5
@@ -44,9 +75,7 @@ namespace AccessControlPortal.Controllers
                     var EmpResponse = Res.Content.ReadAsStringAsync().Result;
 
                     EmpInfo = JsonConvert.DeserializeObject<Pessoa>(EmpResponse);
-
-                    //return RedirectToAction("Create", "PessoaTipoAcesso");
-                    return Json(Url.Action("Create", "PessoaTipoAcesso",EmpInfo));
+                    return Json(Url.Action("Create", "PessoaTipoAcesso", new { pessoa = EmpInfo.Id}));
                 }
                 else
                 {
@@ -79,7 +108,16 @@ namespace AccessControlPortal.Controllers
 
                 if (Res.IsSuccessStatusCode)
                 {
-                    return RedirectToAction("Create","PessoaTipoAcesso");
+                    var pessoaAdd = GetPessoaByCpf(pessoa.Cpf);
+
+                    if(pessoaAdd != null)
+                    {
+                        return RedirectToAction("Create", "PessoaTipoAcesso", pessoaAdd.Id);
+                    }
+                    else
+                    {
+                        return RedirectToAction("Error");
+                    }
                 }
                 else
                 {

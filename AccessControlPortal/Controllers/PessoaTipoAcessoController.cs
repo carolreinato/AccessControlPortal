@@ -16,7 +16,7 @@ namespace AccessControlPortal.Controllers
         private string Baseurl = "https://localhost:44372/";
 
         // GET: PessoaTipoAcesso/Create
-        public async Task<ActionResult> Create(Pessoa empInfo)
+        public async Task<ActionResult> Create(int pessoa)
         {
             //Pegar os códigos de acesso que não estão em uso:
             List<CodigoAcesso> codigosLivres = new List<CodigoAcesso>();
@@ -39,7 +39,7 @@ namespace AccessControlPortal.Controllers
 
                     var model = new CriarPessoaTipoAcesso
                     {
-                        IdPessoa = empInfo.Id,
+                        IdPessoa = pessoa,
                         IdCodigoAcesso = codigosLivres.Select(x => x.Id).ToList()
                     };
 
@@ -54,10 +54,8 @@ namespace AccessControlPortal.Controllers
 
         // POST: PessoaTipoAcesso/Create
         [HttpPost]
-        public async Task<JsonResult> Create(int idPessoa = 1, int idTipoAcesso = 3, string idCodigoAcessoString = "E760A8CE-415D-4F2F-A269-28B32710ECDA")
+        public async Task<JsonResult> Create(int idPessoa, int idTipoAcesso, Guid idCodigoAcesso)
         {
-            Guid idCodigoAcesso = Guid.Parse(idCodigoAcessoString);
-
             var pessoa = new PessoaCreate();
 
             using (var client = new HttpClient())
