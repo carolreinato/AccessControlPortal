@@ -100,7 +100,7 @@ namespace AccessControlPortal.Controllers
 
                 if (Res.IsSuccessStatusCode)
                 {
-                    return RedirectToAction("Index","Home");
+                    return RedirectToAction("Create","PessoaTipoAcesso");
                 }
                 else
                 {
