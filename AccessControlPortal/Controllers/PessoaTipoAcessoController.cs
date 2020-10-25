@@ -15,18 +15,6 @@ namespace AccessControlPortal.Controllers
     {
         private string Baseurl = "https://localhost:44372/";
 
-        // GET: PessoaTipoAcesso
-        public ActionResult Index()
-        {
-            return View();
-        }
-
-        // GET: PessoaTipoAcesso/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
-        }
-
         // GET: PessoaTipoAcesso/Create
         public async Task<ActionResult> Create(Pessoa empInfo)
         {
@@ -48,20 +36,20 @@ namespace AccessControlPortal.Controllers
                     var EmpResponse = Res.Content.ReadAsStringAsync().Result;
 
                     codigosLivres = JsonConvert.DeserializeObject<List<CodigoAcesso>>(EmpResponse);
+
+                    var model = new CriarPessoaTipoAcesso
+                    {
+                        IdPessoa = empInfo.Id,
+                        IdCodigoAcesso = codigosLivres.Select(x => x.Id).ToList()
+                    };
+
+                    return View(model);
                 }
                 else
                 {
                     return View("Error");
                 }
             }
-
-            var model = new CriarPessoaTipoAcesso
-            {
-                IdPessoa = empInfo.Id,
-                IdCodigoAcesso = codigosLivres.Select(x => x.Id).ToList()
-            };
-
-            return View(model);
         }
 
         // POST: PessoaTipoAcesso/Create
@@ -93,49 +81,99 @@ namespace AccessControlPortal.Controllers
             }
         }
 
-        // GET: PessoaTipoAcesso/Edit/5
-        public ActionResult Edit(int id)
+        public ActionResult BaixaNoAcesso()
         {
             return View();
         }
 
-        // POST: PessoaTipoAcesso/Edit/5
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<JsonResult> GetIdPessoaTipoAcesso(string cpf)
         {
-            try
-            {
-                // TODO: Add update logic here
+            PessoaTipoAcesso EmpInfo = new PessoaTipoAcesso();
 
-                return RedirectToAction(nameof(Index));
-            }
-            catch
+            using (var client = new HttpClient())
             {
-                return View();
+                client.BaseAddress = new Uri(Baseurl);
+
+                client.DefaultRequestHeaders.Clear();
+
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                HttpResponseMessage Res = await client.GetAsync("api/PessoaTipoAcesso/GetPessoaTipoAcesso?cpf=" + cpf);
+
+                if (Res.IsSuccessStatusCode)
+                {
+                    var EmpResponse = Res.Content.ReadAsStringAsync().Result;
+
+                    EmpInfo = JsonConvert.DeserializeObject<PessoaTipoAcesso>(EmpResponse);
+
+                    var aux = this.SairDoCondominio(EmpInfo);
+
+                    if (await aux)
+                    {
+                        return Json(Url.Action("Index", "Home"));
+                    }
+                    else
+                    {
+                        return Json(Url.Action("Index", "Home"));
+                    }
+                }
+                else
+                {
+                    return Json(Url.Action("Error"));
+                }
             }
         }
 
-        // GET: PessoaTipoAcesso/Delete/5
-        public ActionResult Delete(int id)
+        [HttpPut]
+        public async Task<bool> SairDoCondominio(PessoaTipoAcesso empInfo)
         {
-            return View();
+            var idPessoaTipoAcesso = empInfo.Id;
+            var idCodigoAcesso = empInfo.IdCodigoAcesso;
+
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(Baseurl);
+
+                client.DefaultRequestHeaders.Clear();
+
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                HttpResponseMessage Res = await client.PutAsJsonAsync<PessoaTipoAcesso>("api/PessoaTipoAcesso/UpdatePessoaTipoAcesso?idPessoaTipoAcesso=" + idPessoaTipoAcesso, empInfo);
+
+                if (Res.IsSuccessStatusCode)
+                {
+                    var aux = this.UpdateStatusCartao(idCodigoAcesso);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
 
-        // POST: PessoaTipoAcesso/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        [HttpPut]
+        public async Task<bool> UpdateStatusCartao(Guid guid)
         {
-            try
+            using (var client = new HttpClient())
             {
-                // TODO: Add delete logic here
+                client.BaseAddress = new Uri(Baseurl);
 
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
+                client.DefaultRequestHeaders.Clear();
+
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                HttpResponseMessage Res = await client.PutAsJsonAsync<Guid>($"api/CodigoAcesso/UpdateCodigoAcesso?id={guid}&staus=false", guid);
+
+                if (Res.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
     }
