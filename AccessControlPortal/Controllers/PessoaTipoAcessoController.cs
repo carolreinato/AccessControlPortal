@@ -3,52 +3,35 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using AccessControlPortal.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Newtonsoft.Json;
 
 namespace AccessControlPortal.Controllers
 {
-    public class PessoaController : Controller
+    public class PessoaTipoAcessoController : Controller
     {
         private string Baseurl = "https://localhost:44372/";
 
-        // GET: Pessoa
-        public async Task<ActionResult> Index()
+        // GET: PessoaTipoAcesso
+        public ActionResult Index()
         {
-            //List<Pessoa> EmpInfo = new List<Pessoa>();
-
-            //using (var client = new HttpClient())
-            //{
-            //    client.BaseAddress = new Uri(Baseurl);
-
-            //    client.DefaultRequestHeaders.Clear();
-
-            //    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            //    HttpResponseMessage Res = await client.GetAsync("api/Pessoa/GetPessoas");
-
-            //    if (Res.IsSuccessStatusCode)
-            //    {
-            //        var EmpResponse = Res.Content.ReadAsStringAsync().Result;
-
-            //        EmpInfo = JsonConvert.DeserializeObject<List<Pessoa>>(EmpResponse);
-            //    }
-            //    return View(EmpInfo);
-            //}
-
             return View();
         }
 
-        // GET: Pessoa/Details/5
-        [HttpPost]
-        public async Task<JsonResult> Details(string cpf)
+        // GET: PessoaTipoAcesso/Details/5
+        public ActionResult Details(int id)
         {
-            Pessoa EmpInfo = new Pessoa();
+            return View();
+        }
+
+        // GET: PessoaTipoAcesso/Create
+        public async Task<ActionResult> Create(Pessoa empInfo)
+        {
+            //Pegar os códigos de acesso que não estão em uso:
+            List<CodigoAcesso> codigosLivres = new List<CodigoAcesso>();
 
             using (var client = new HttpClient())
             {
@@ -58,36 +41,37 @@ namespace AccessControlPortal.Controllers
 
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                HttpResponseMessage Res = await client.GetAsync("api/Pessoa/GetPessoa?cpf=" + cpf);
+                HttpResponseMessage Res = await client.GetAsync("api/CodigoAcesso/GetCodigosAcessoLivres");
 
                 if (Res.IsSuccessStatusCode)
                 {
                     var EmpResponse = Res.Content.ReadAsStringAsync().Result;
 
-                    EmpInfo = JsonConvert.DeserializeObject<Pessoa>(EmpResponse);
-
-                    //return RedirectToAction("Create", "PessoaTipoAcesso");
-                    return Json(Url.Action("Create", "PessoaTipoAcesso",EmpInfo));
+                    codigosLivres = JsonConvert.DeserializeObject<List<CodigoAcesso>>(EmpResponse);
                 }
                 else
                 {
-                    //return View("Create");
-                    return Json(Url.Action("Create", "Pessoa"));
+                    return View("Error");
                 }
-                
             }
+
+            var model = new CriarPessoaTipoAcesso
+            {
+                IdPessoa = empInfo.Id,
+                IdCodigoAcesso = codigosLivres.Select(x => x.Id).ToList()
+            };
+
+            return View(model);
         }
 
-        // GET: Pessoa/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: Pessoa/Create
+        // POST: PessoaTipoAcesso/Create
         [HttpPost]
-        public async Task<ActionResult> Create(PessoaCreate pessoa)
+        public async Task<JsonResult> Create(int idPessoa = 1, int idTipoAcesso = 3, string idCodigoAcessoString = "E760A8CE-415D-4F2F-A269-28B32710ECDA")
         {
+            Guid idCodigoAcesso = Guid.Parse(idCodigoAcessoString);
+
+            var pessoa = new PessoaCreate();
+
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri(Baseurl);
@@ -96,27 +80,26 @@ namespace AccessControlPortal.Controllers
 
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                HttpResponseMessage Res = await client.PostAsJsonAsync<PessoaCreate>($"api/Pessoa/AddPessoa?nome={pessoa.Nome}&cpf={pessoa.Cpf}&telefone={pessoa.Telefone}", pessoa);
+                HttpResponseMessage Res = await client.PostAsJsonAsync<PessoaCreate>($"api/PessoaTipoAcesso/AddPessoaTipoAcesso?idPessoa={idPessoa}&idTipoAcesso={idTipoAcesso}&idCodigoAcesso={idCodigoAcesso}", pessoa);
 
                 if (Res.IsSuccessStatusCode)
                 {
-                    return RedirectToAction("Index","Home");
+                    return Json(Url.Action("Index", "Home"));
                 }
                 else
                 {
-                    return RedirectToAction("Index");
+                    return Json(Url.Action("Error"));
                 }
-
             }
         }
 
-        // GET: Pessoa/Edit/5
+        // GET: PessoaTipoAcesso/Edit/5
         public ActionResult Edit(int id)
         {
             return View();
         }
 
-        // POST: Pessoa/Edit/5
+        // POST: PessoaTipoAcesso/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(int id, IFormCollection collection)
@@ -133,13 +116,13 @@ namespace AccessControlPortal.Controllers
             }
         }
 
-        // GET: Pessoa/Delete/5
+        // GET: PessoaTipoAcesso/Delete/5
         public ActionResult Delete(int id)
         {
             return View();
         }
 
-        // POST: Pessoa/Delete/5
+        // POST: PessoaTipoAcesso/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Delete(int id, IFormCollection collection)

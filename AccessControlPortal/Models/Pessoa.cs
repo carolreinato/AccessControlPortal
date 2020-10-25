@@ -12,4 +12,11 @@ namespace AccessControlPortal.Models
         public string Cpf { get; set; }
         public string Telefone { get; set; }
     }
+
+    public class PessoaCreate
+    {
+        public string Nome { get; set; }
+        public string Cpf { get; set; }
+        public string Telefone { get; set; }
+    }
 }
